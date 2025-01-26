@@ -1,0 +1,62 @@
+#!/bin/bash
+
+# ptp: Pandoc-Typst-PDF
+#
+# ptp converts markdown to typst and then compiles to a PDF file.
+#
+# brew install shyaml
+
+source "$(dirname $0)/log.sh"
+
+run() {
+    info "Running: $*"
+    "$@"
+}
+
+VARIABLES=""
+TYP=""
+PDF=""
+
+VIEW=0
+
+while getopts "hvo:" arg; do
+  case $arg in
+    h)
+      echo is -h
+      VARIABLES="-V hardcopy=true"
+      ;;
+    v)
+      echo is -v
+      VIEW=1
+      ;;
+    o)
+      echo is -o
+      PDF="${OPTARG}"
+      TYP="${OPTARG%.*}.typ"
+      ;;
+  esac
+done
+shift $((OPTIND-1))
+if [[ $# == 0 ]]; then
+    echo "Usage: $(basename $0) [-h] <file.md>"
+    exit 1
+fi
+
+if [[ -z "$TYP" ]]; then
+    TYP="/tmp/${1%.*}.typ"
+    PDF="/tmp/${1%.*}.pdf"
+fi
+
+TEMPL=$(sed -nre 's/^template: (.*)/\1/p' "$1");
+if [[ ! -z $TEMPL ]]; then
+    TEMPLATE_ARG="--template $TEMPL"
+fi
+
+YAML=$(cat "$1" | sed -nre '/^---$/,/^---$/p' | grep -v "^---$")
+FILTERS_ARG=$(echo "$YAML" | shyaml get-value filters | sed -nre "s/- (.*).lua/--lua-filter \1.lua /p")
+
+run pandoc -s -t typst $TEMPLATE_ARG $FILTERS_ARG -i "$*" -o "$TYP" $VARIABLES || die "Error running pandoc"
+run typst compile "$TYP" || die "Error running typst"
+if [[ $VIEW -eq 1 ]]; then
+    run open -a Preview.app "$PDF"
+fi
