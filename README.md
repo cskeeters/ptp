@@ -30,6 +30,13 @@ Devices on a +LAN access the +WAN via a gateway, not a router, on most home netw
 ptp doc.md
 ```
 
+## Options
+
+```
+  -v    View the resulting PDF once compiled
+  -h    Set the variable hardcopy for templates to use
+```
+
 ## Neovim
 
 To configure neovim, place this in `~/.config/nvim/ftplugin/markdown.lua`.
