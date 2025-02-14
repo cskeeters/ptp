@@ -1,4 +1,4 @@
-`ptp` is a bash script that uses [shyaml] to parse the [frontmatter] to allow the document to specify which template and filters to apply in order to generate a PDF file via [Typst].
+`ptp` is a bash script that uses [shyaml] to parse the [frontmatter] to allow the document to specify which [Pandoc](https://github.com/jgm/pandoc) template and filters to apply in order to generate a PDF file via [Typst].
 
 [shyaml]: https://github.com/0k/shyaml
 [frontmatter]: https://docs.github.com/en/contributing/writing-for-github-docs/using-yaml-frontmatter
