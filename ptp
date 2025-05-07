@@ -4,7 +4,9 @@
 #
 # ptp converts markdown to typst and then compiles to a PDF file.
 #
-# brew install shyaml
+# Requires shyaml.  Install with:
+#
+#   brew install shyaml
 
 source "$(dirname $0)/log.sh"
 
@@ -14,37 +16,42 @@ run() {
 }
 
 VARIABLES=""
-TYP=""
-PDF=""
-
+KEEP=1
 VIEW=0
+TMP=0
 
-while getopts "hvo:" arg; do
+while getopts "hvkt" arg; do
   case $arg in
     h)
-      echo is -h
       VARIABLES="-V hardcopy=true"
       ;;
+    k)
+      KEEP=1
+      ;;
     v)
-      echo is -v
       VIEW=1
       ;;
-    o)
-      echo is -o
-      PDF="${OPTARG}"
-      TYP="${OPTARG%.*}.typ"
+    t)
+      TMP=1
       ;;
   esac
 done
 shift $((OPTIND-1))
 if [[ $# == 0 ]]; then
     echo "Usage: $(basename $0) [-h] <file.md>"
+    echo "    -h  Pass '-V hardcopy=true' to 'typst compile'"
+    echo "    -k  Don't remove .typ intermediate source file"
+    echo "    -v  Open PDF file after building"
+    echo "    -t  Write .typ and .pdf files in $TMPDIR"
     exit 1
 fi
 
-if [[ -z "$TYP" ]]; then
-    TYP="/tmp/${1%.*}.typ"
-    PDF="/tmp/${1%.*}.pdf"
+if [[ $TMP -eq 1 ]]; then
+    TYP="$TMPDIR/${1%.*}.typ"
+    PDF="$TMPDIR/${1%.*}.pdf"
+else
+    TYP="${1%.*}.typ"
+    PDF="${1%.*}.pdf"
 fi
 
 TEMPL=$(sed -nre 's/^template: (.*)/\1/p' "$1");
@@ -55,8 +62,27 @@ fi
 YAML=$(cat "$1" | sed -nre '/^---$/,/^---$/p' | grep -v "^---$")
 FILTERS_ARG=$(echo "$YAML" | shyaml get-value filters | sed -nre "s/- (.*).lua/--lua-filter \1.lua /p")
 
+# Arguments:
+#   -s           Standalone (use template)
+#   -t typst     To format
+#   -i           Make lists display incrementally in presentation
+#   -o filename  Output to filename
+#
+#   --embed-resources (embed image with "data:", for HTML)
+#   --extract-media="$TMPDIR" (Copy assets (images) to target dir)
+#
+# Convert Markdown to Typst
 run pandoc -s -t typst $TEMPLATE_ARG $FILTERS_ARG -i "$*" -o "$TYP" $VARIABLES || die "Error running pandoc"
+
+# Compile Typst to PDF
 run typst compile "$TYP" || die "Error running typst"
+
+# Remove intermediate Typst Source
+if [[ $KEEP -ne 1 ]]; then
+    rm -f "$TYP"
+fi
+
+# Open PDF in preferred viewer
 if [[ $VIEW -eq 1 ]]; then
     run open -a Preview.app "$PDF"
 fi
