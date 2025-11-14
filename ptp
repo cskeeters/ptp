@@ -69,10 +69,10 @@ FILTERS_ARG=$(echo "$YAML" | shyaml get-value filters | sed -nre "s/- (.*).lua/-
 #   -o filename  Output to filename
 #
 #   --embed-resources (embed image with "data:", for HTML)
-#   --extract-media="$TMPDIR" (Copy assets (images) to target dir)
+#   --extract-media="$TMPDIR" (Copy assets (images) to target dir) (required for pandoc-diagram)
 #
 # Convert Markdown to Typst
-run pandoc -s -t typst $TEMPLATE_ARG $FILTERS_ARG -i "$*" -o "$TYP" $VARIABLES || die "Error running pandoc"
+run pandoc -s -t typst $TEMPLATE_ARG --extract-media="media" $FILTERS_ARG -i "$*" -o "$TYP" $VARIABLES || die "Error running pandoc"
 
 # Compile Typst to PDF
 run typst compile "$TYP" || die "Error running typst"
